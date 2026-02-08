@@ -1,0 +1,41 @@
+//
+// Release.xcconfig - Release build configuration
+//
+// 用于发布的 Release 构建设置
+
+// 代码签名 - 发布时需要有效的签名证书
+CODE_SIGN_IDENTITY = $(CODE_SIGN_IDENTITY_RELEASE)
+CODE_SIGN_STYLE = Manual
+DEVELOPMENT_TEAM = $(DEVELOPMENT_TEAM_ID)
+
+// 部署
+MACOSX_DEPLOYMENT_TARGET = 14.0
+
+// 优化设置 - Release 模式完全优化
+GCC_OPTIMIZATION_LEVEL = s
+SWIFT_OPTIMIZATION_LEVEL = -O
+SWIFT_COMPILATION_MODE = wholemodule
+
+// 调试信息 - Release 模式生成 dSYM
+DEBUG_INFORMATION_FORMAT = dwarf-with-dsym
+ENABLE_NS_ASSERTIONS = NO
+STRIP_INSTALLED_PRODUCT = YES
+SEPARATE_STRIP = YES
+
+// Swift 编译设置
+SWIFT_VERSION = 5.9
+
+// 链接优化
+DEAD_CODE_STRIPPING = YES
+LINKER_DISPLAYS_MANGLED_NAMES = NO
+
+// 预处理器定义
+GCC_PREPROCESSOR_DEFINITIONS = RELEASE=1 $(inherited)
+
+// 构建选项
+SDKROOT = macosx
+SUPPORTED_PLATFORMS = macosx
+ENABLE_BITCODE = NO
+
+// 本地化
+SWIFT_EMIT_LOC_STRINGS = YES

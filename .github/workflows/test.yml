@@ -1,0 +1,76 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_15.0.app/Contents/Developer
+
+jobs:
+  unit-tests:
+    runs-on: macos-14
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Show Xcode version
+      run: xcodebuild -version
+
+    - name: Swift Package Resolve
+      run: swift package resolve
+
+    - name: Run Swift Tests
+      run: swift test --parallel 2>&1 | xcpretty || true
+
+  ui-tests:
+    runs-on: macos-14
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build for Testing
+      run: |
+        xcodebuild -project ChineseChess.xcodeproj \
+                   -scheme ChineseChess \
+                   -destination 'platform=macOS' \
+                   -configuration Debug \
+                   build-for-testing
+
+    - name: Run UI Tests
+      run: |
+        xcodebuild -project ChineseChess.xcodeproj \
+                   -scheme ChineseChess \
+                   -destination 'platform=macOS' \
+                   -configuration Debug \
+                   test-without-building
+
+  lint:
+    runs-on: macos-14
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install SwiftLint
+      run: |
+        if ! command -v swiftlint &> /dev/null; then
+          brew install swiftlint
+        fi
+
+    - name: Run SwiftLint
+      run: |
+        swiftlint lint --reporter github-actions-logging
+
+  format-check:
+    runs-on: macos-14
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install SwiftFormat
+      run: |
+        if ! command -v swiftformat &> /dev/null; then
+          brew install swiftformat
+        fi
+
+    - name: Check Formatting
+      run: |
+        swiftformat --lint .

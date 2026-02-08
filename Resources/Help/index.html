@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中国象棋 - 帮助</title>
+    <style>
+        :root {
+            --primary-color: #C41E3A;
+            --secondary-color: #333;
+            --background-color: #f5f5f5;
+            --card-background: #fff;
+            --text-color: #333;
+            --border-color: #ddd;
+            --hover-color: #f0f0f0;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #1a1a1a;
+                --card-background: #2a2a2a;
+                --text-color: #e0e0e0;
+                --border-color: #444;
+                --hover-color: #3a3a3a;
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        .search-box {
+            max-width: 600px;
+            margin: 30px auto;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--card-background);
+            color: var(--text-color);
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background-color: var(--card-background);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+
+        .card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .card p {
+            font-size: 0.95rem;
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+
+        .quick-links {
+            background-color: var(--card-background);
+            border-radius: 12px;
+            padding: 30px;
+            border: 1px solid var(--border-color);
+        }
+
+        .quick-links h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        .quick-links ul {
+            list-style: none;
+        }
+
+        .quick-links li {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .quick-links li:last-child {
+            border-bottom: none;
+        }
+
+        .quick-links a {
+            color: var(--text-color);
+            text-decoration: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .quick-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .shortcut {
+            font-family: "SF Mono", Monaco, monospace;
+            font-size: 0.85rem;
+            background-color: var(--background-color);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            border-top: 1px solid var(--border-color);
+            margin-top: 40px;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+
+        footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-links a {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .shortcut {
+                margin-top: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>中国象棋 帮助中心</h1>
+            <p>欢迎来到中国象棋的帮助中心。在这里你可以找到使用指南、教程和常见问题解答。</p>
+
+            <div class="search-box">
+                <input type="text" placeholder="搜索帮助内容..." id="searchInput">
+            </div>
+        </header>
+
+        <div class="cards-grid">
+            <a href="quickstart.html" class="card">
+                <div class="card-icon">🚀</div>
+                <h3>快速开始</h3>
+                <p>在 10 分钟内学会使用中国象棋，从安装到第一盘棋的完整指南。</p>
+            </a>
+
+            <a href="installation.html" class="card">
+                <div class="card-icon">💾</div>
+                <h3>安装指南</h3>
+                <p>详细的安装说明，包括系统要求、下载安装和引擎配置。</p>
+            </a>
+
+            <a href="userguide.html" class="card">
+                <div class="card-icon">📖</div>
+                <h3>用户手册</h3>
+                <p>完整的功能说明，涵盖界面介绍、棋盘操作和高级功能。</p>
+            </a>
+
+            <a href="engine.html" class="card">
+                <div class="card-icon">⚙️</div>
+                <h3>引擎配置</h3>
+                <p>UCI 引擎配置指南，包括下载、安装和优化设置。</p>
+            </a>
+
+            <a href="shortcuts.html" class="card">
+                <div class="card-icon">⌨️</div>
+                <h3>快捷键</h3>
+                <p>完整的键盘快捷键参考，提高操作效率。</p>
+            </a>
+
+            <a href="faq.html" class="card">
+                <div class="card-icon">❓</div>
+                <h3>常见问题</h3>
+                <p>常见问题解答，解决使用过程中的各种疑问。</p>
+            </a>
+        </div>
+
+        <div class="quick-links">
+            <h2>常用操作</h2>
+            <ul>
+                <li>
+                    <a href="#">
+                        新局开始
+                        <span class="shortcut">⌘N</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        悔棋
+                        <span class="shortcut">⌘Z</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        请求提示
+                        <span class="shortcut">⌘H</span>
+                    </a>
+                </li>
+                <li>
+                        <a href="#">
+                        保存棋谱
+                        <span class="shortcut">⌘S</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        分析模式
+                        <span class="shortcut">⌘T</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <footer>
+            <p>中国象棋 macOS 应用</p>
+            <p>需要帮助？请访问我们的 <a href="https://github.com/yourusername/ChineseChess/issues">GitHub Issues</a> 页面</p>
+            <p>版权所有  2024 | 开源协议：MIT</p>
+        </footer>
+    </div>
+
+    <script>
+        // 简单的搜索功能
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const query = this.value.toLowerCase();
+                // 这里可以实现实际的搜索逻辑
+                alert('搜索功能正在开发中，请直接浏览下方的帮助主题。');
+            }
+        });
+    </script>
+</body>
+</html>

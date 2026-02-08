@@ -1,0 +1,108 @@
+name: Distribute
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release Type'
+        required: true
+        default: 'beta'
+        type: choice
+        options:
+        - beta
+        - stable
+      version:
+        description: 'Version (e.g., 1.0.0)'
+        required: true
+        type: string
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_15.0.app/Contents/Developer
+
+jobs:
+  build-and-distribute:
+    runs-on: macos-14
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Update Version
+      run: |
+        echo "${{ github.event.inputs.version }}" > VERSION
+        echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+
+    - name: Install Dependencies
+      run: |
+        brew install create-dmg || true
+
+    - name: Setup Certificates
+      if: env.CERTIFICATE_PASSWORD != ''
+      env:
+        CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+      run: |
+        echo "${{ secrets.BUILD_CERTIFICATE_BASE64 }}" | base64 --decode -o certificate.p12
+        security create-keychain -p "$CERTIFICATE_PASSWORD" build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p "$CERTIFICATE_PASSWORD" build.keychain
+        security import certificate.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$CERTIFICATE_PASSWORD" build.keychain
+
+    - name: Build Application
+      run: |
+        xcodebuild -project ChineseChess.xcodeproj \
+                   -scheme ChineseChess \
+                   -configuration Release \
+                   -archivePath build/ChineseChess.xcarchive \
+                   archive
+
+    - name: Export Application
+      run: |
+        xcodebuild -exportArchive \
+                   -archivePath build/ChineseChess.xcarchive \
+                   -exportPath build/Export \
+                   -exportOptionsPlist ExportOptions.plist
+
+    - name: Notarize
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        APPLE_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      run: |
+        ./Scripts/notarize.sh \
+          --app-path build/Export/ChineseChess.app \
+          --team-id "$APPLE_TEAM_ID" \
+          --apple-id "$APPLE_ID" \
+          --password "$APPLE_PASSWORD"
+
+    - name: Create DMG
+      run: |
+        ./Scripts/create-dmg.sh \
+          --app-path build/Export/ChineseChess.app \
+          --output-path build/ChineseChess-${{ env.VERSION }}.dmg \
+          --version "${{ env.VERSION }}"
+
+    - name: Calculate Checksums
+      run: |
+        cd build
+        shasum -a 256 ChineseChess-${{ env.VERSION }}.dmg > ChineseChess-${{ env.VERSION }}.dmg.sha256
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ChineseChess-${{ env.VERSION }}
+        path: |
+          build/ChineseChess-${{ env.VERSION }}.dmg
+          build/ChineseChess-${{ env.VERSION }}.dmg.sha256
+
+    - name: Create Release
+      if: github.event.inputs.release_type == 'stable'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ env.VERSION }}
+        release_name: ChineseChess ${{ env.VERSION }}
+        body_path: RELEASE_NOTES.md
+        draft: true
+        prerelease: false

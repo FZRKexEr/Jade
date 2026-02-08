@@ -1,0 +1,143 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_15.0.app/Contents/Developer
+  APP_NAME: ChineseChess
+  BUNDLE_ID: com.chinesechess.app
+
+jobs:
+  build-and-release:
+    runs-on: macos-14
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Get version from tag
+      id: get_version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Install signing certificates
+      env:
+        BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+        P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+        KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+      run: |
+        # Create variables
+        CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+        KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+        # Import certificate from secrets
+        echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode --output $CERTIFICATE_PATH
+
+        # Create temporary keychain
+        security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+        security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+        # Import certificate to keychain
+        security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+        security list-keychain -d user -s $KEYCHAIN_PATH
+
+    - name: Build and Archive
+      run: |
+        # Build the app
+        xcodebuild -project ChineseChess.xcodeproj \
+                   -scheme ChineseChess \
+                   -destination 'platform=macOS' \
+                   -configuration Release \
+                   -archivePath build/ChineseChess.xcarchive \
+                   archive \
+                   CODE_SIGN_IDENTITY="${{ secrets.CODE_SIGN_IDENTITY }}" \
+                   DEVELOPMENT_TEAM="${{ secrets.DEVELOPMENT_TEAM }}"
+
+        # Export the app
+        xcodebuild -exportArchive \
+                   -archivePath build/ChineseChess.xcarchive \
+                   -exportPath build/Export \
+                   -exportOptionsPlist ExportOptions.plist
+
+    - name: Sign and Notarize
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_TEAM_ID: ${{ secrets.DEVELOPMENT_TEAM }}
+        APPLE_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      run: |
+        APP_PATH="build/Export/ChineseChess.app"
+        DMG_PATH="build/ChineseChess-${{ env.VERSION }}.dmg"
+
+        # Create DMG
+        ./Scripts/create-dmg.sh \
+          --app-path "$APP_PATH" \
+          --output-path "$DMG_PATH" \
+          --version "${{ env.VERSION }}"
+
+        # Notarize the DMG
+        xcrun notarytool submit "$DMG_PATH" \
+          --apple-id "$APPLE_ID" \
+          --team-id "$APPLE_TEAM_ID" \
+          --password "$APPLE_PASSWORD" \
+          --wait
+
+        # Staple the notarization ticket
+        xcrun stapler staple "$DMG_PATH"
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: ChineseChess ${{ steps.get_version.outputs.version }}
+        body: |
+          ## ChineseChess ${{ steps.get_version.outputs.version }}
+
+          ### 安装说明
+          1. 下载 `ChineseChess-${{ steps.get_version.outputs.version }}.dmg`
+          2. 双击挂载 DMG
+          3. 将 `ChineseChess.app` 拖到 `Applications` 文件夹
+          4. 从 Launchpad 或 Applications 启动应用
+
+          ### 系统要求
+          - macOS 14.0 或更高版本
+          - Apple Silicon 或 Intel Mac
+
+          ### 验证签名
+          ```bash
+          codesign -dv --verbose=4 /Applications/ChineseChess.app
+          ```
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: build/ChineseChess-${{ env.VERSION }}.dmg
+        asset_name: ChineseChess-${{ env.VERSION }}.dmg
+        asset_content_type: application/x-apple-diskimage
+
+    - name: Update Homebrew Formula
+      run: |
+        # Calculate SHA256 of the DMG
+        SHA256=$(shasum -a 256 build/ChineseChess-${{ env.VERSION }}.dmg | awk '{ print $1 }')
+
+        # Update homebrew formula (this would be in a separate repo)
+        echo "SHA256: $SHA256"
+        echo "Version: ${{ env.VERSION }}"
+
+    - name: Cleanup
+      if: always()
+      run: |
+        security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
